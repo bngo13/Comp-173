@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 
 #define MAX_LINE 80 /* 80 chars per line, per command, should be enough. */
 
@@ -82,18 +83,22 @@ int main(void)
 	char *args[MAX_LINE/2 + 1]; /* command line arguments */
 
    	while (1) {
-     	background = 0;
-     	printf(" COMMAND->");
-     	fflush(stdout);
-     	
-     	/* setup() calls exit() when Control-D is entered */
-     	setup(inputBuffer, args, &background);
+	    background = 0;
+	    printf(" COMMAND->");
+	    fflush(stdout);
+	    
+	    /* setup() calls exit() when Control-D is entered */
+	    setup(inputBuffer, args, &background);
 
-     	/** the steps are:
-     	(1) fork a child process using fork()
-     	(2) the child process will invoke execvp()
-     	(3) if background == 0, the parent will wait,
-     	    otherwise it will continue to the next iteration. */
-  }
+	    // Create a child process
+	    pid_t pid = fork();
+	    if (!pid) {
+		int status = execvp(inputBuffer, args);
+		return status;
+	    }
+	    if (background == 0) {
+	        wait(&pid);
+	    }
+      }
 }
 
