@@ -1,0 +1,3 @@
+Compile instructions:
+	$ gcc simple-shell_skeleton.c -o simple-shell
+	# ./simple-shell

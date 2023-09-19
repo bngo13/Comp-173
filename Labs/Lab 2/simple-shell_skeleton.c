@@ -19,7 +19,7 @@ void setup(char inputBuffer[], char *args[],int *background)
 	ct;     /* index of where to place the next parameter into args[] */
     
     ct = 0;
-	
+
     /* read what the user enters on the command line */
     length = read(STDIN_FILENO,inputBuffer,MAX_LINE);  
 	
@@ -78,27 +78,37 @@ void setup(char inputBuffer[], char *args[],int *background)
 
 int main(void)
 {
-	char inputBuffer[MAX_LINE]; /* buffer to hold command entered */
-	int background; /* equals 1 if a command is followed by '&' */
-	char *args[MAX_LINE/2 + 1]; /* command line arguments */
+    char inputBuffer[MAX_LINE]; /* buffer to hold command entered */
+    int background; /* equals 1 if a command is followed by '&' */
+    char *args[MAX_LINE/2 + 1]; /* command line arguments */
 
-   	while (1) {
-	    background = 0;
-	    printf(" COMMAND->");
-	    fflush(stdout);
-	    
-	    /* setup() calls exit() when Control-D is entered */
-	    setup(inputBuffer, args, &background);
+    while (1) {
+	background = 0;
+	printf(" COMMAND->");
+	fflush(stdout);
 
-	    // Create a child process
-	    pid_t pid = fork();
-	    if (!pid) {
-		int status = execvp(inputBuffer, args);
-		return status;
-	    }
-	    if (background == 0) {
-	        wait(&pid);
-	    }
-      }
+	/* setup() calls exit() when Control-D is entered */
+	setup(inputBuffer, args, &background);
+
+	// Create a child process
+	pid_t pid = fork();
+	
+	// Spawning process failed
+	if (pid == -1) {
+	    perror("fork failed");
+	    return -1;
+	}
+
+	// Detect if is child process
+	if (pid == 0) {
+	    int status = execvp(inputBuffer, args);
+	    return status;
+	}
+
+	// If not child process, wait if background is 0
+	if (background == 0) {
+	    wait(&pid);
+	} 
+    }
 }
 
