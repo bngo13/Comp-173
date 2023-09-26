@@ -6,38 +6,51 @@
 #include <sys/wait.h>
 
 int main() {
-	char inbuf[11];
-	int pipes[2], pid, nbytes; // pipe[1] sender | pipe[0] receiver
-	
-	char* str = "Hello There";
-	int strSize = strlen(str);
+	int childPipe[2];
+	int parentPipe[2];
 
-	pipe(pipes);
 
-	if ((pid = fork()) > 0) {
-		// Parent
-		write(pipes[1], str, strSize);
-		close(pipes[1]);
-		wait(&pid);
+	char strBuf[11];
+	char* sendString = "Hi There";
+	int strSize = strlen(sendString);
 
-	} else {
-		// Child
-		close(pipes[1]);
-		while ((nbytes = read(pipes[0], inbuf, strSize)) > 0) {
-			for (int i = 0; i < strSize; i++) {
-				if (isupper(inbuf[i])) {
-					inbuf[i] = tolower(inbuf[i]);
-				} else {
-					inbuf[i] = toupper(inbuf[i]);
-				}	
+	pipe(childPipe);
+	pipe(parentPipe);
+
+	pid_t pid = fork();
+
+	if (pid == 0) { // Child
+		read(childPipe[0], strBuf, strSize);
+		
+		printf("Child Received %s\n", strBuf);
+
+		// Modify to reverse case
+		for (int i = 0; i < strSize; i++) {
+			if (isupper(strBuf[i])) {
+				strBuf[i] = tolower(strBuf[i]);
+
+			} else {
+				strBuf[i] = toupper(strBuf[i]);
 			}
-			printf("%s\n", inbuf);
-		}
-		if (nbytes != 0) {
-			exit(2);
 		}
 
+		printf("Child Sending %s\n", strBuf);
+
+		// Write to parent
+
+		write(parentPipe[1], strBuf, strSize);
+		
+	} else if (pid > 0) { // Parent
+		printf("Parent Sending %s\n", sendString);
+
+		// Write to Child
+		write(childPipe[1], sendString, strSize);
+		wait(NULL); // Wait for child to finish
+
+		// Read from child
+		read(parentPipe[0], strBuf, strSize);
+		printf("Parent Received %s\n", strBuf);
+	} else {
+		return -1;
 	}
-
-	return 0;
 }
