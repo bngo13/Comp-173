@@ -17,6 +17,7 @@ impl SimulationFCFS {
             // Calc waiting time
             self.current_process[6] = self.current_process[4] - self.current_process[1] - self.current_process[2];
 
+            println!("PID\tArrival Time\tStart Time\tEnd Time\tRunning Time\tWaiting Time\n{}\t{}\t\t{}\t\t{}\t\t{}\t\t{}\n", self.current_process[0], self.current_process[1], self.current_process[3], self.current_process[4], self.current_process[5], self.current_process[6]);
 
             // Get new process
             let proc = self.process_queue.pop();
@@ -74,9 +75,14 @@ impl SimulationSJF {
 
                 self.process_queue.remove(shortest_index)
             };
+            
             // Set it
             self.current_process = process;
+
             self.current_process[3] = self.current_time;
+
+        // State Changed. Print debug
+            
         }
         
         self.current_process[5] += 1;
@@ -85,6 +91,7 @@ impl SimulationSJF {
             // Process finished
             self.current_process[4] += self.current_time;
             self.current_process[6] = self.current_process[4] - self.current_process[1] - self.current_process[2];
+            println!("PID\tArrival Time\tStart Time\tEnd Time\tRunning Time\tWaiting Time\n{}\t{}\t\t{}\t\t{}\t\t{}\t\t{}\n", self.current_process[0], self.current_process[1], self.current_process[3], self.current_process[4], self.current_process[5], self.current_process[6]);
             self.process_finished.push(self.current_process.clone());
             self.current_process = Vec::new();
         }
@@ -103,15 +110,15 @@ fn main() {
     ];
 
     let mut fcfs_vec = vec.clone();
-    FCFS(&mut fcfs_vec);
-    println!("{:?}", fcfs_vec);
+    println!("Average Waiting Time: {}\n", FCFS(&mut fcfs_vec));
+    //println!("{:?}", fcfs_vec);
 
     let mut sjf_vec = vec.clone();
-    SJF(&mut sjf_vec);
-    println!("{:?}", sjf_vec);
+    println!("Average Waiting Time: {}\n", SJF(&mut sjf_vec));
+    //println!("{:?}", sjf_vec);
 }
 
-fn FCFS(processes: &mut Vec<Vec<i32>>) -> i32 {
+fn FCFS(processes: &mut Vec<Vec<i32>>) -> f64 {
     // [pid, arrival_time, burst time, start time, end time, running time, waiting time]
     // pid arrival burst already filled    
     let mut sim = SimulationFCFS { current_time: 0, current_process: processes[0].clone(), process_queue: Vec::new(), process_finished: Vec::new() };
@@ -130,11 +137,11 @@ fn FCFS(processes: &mut Vec<Vec<i32>>) -> i32 {
     for i in 0..processes.len() {
         total += processes[i][6];
     }
-    return total / processes.len() as i32;
+    return total as f64 / processes.len() as f64;
  
 }
 
-fn SJF(processes: &mut Vec<Vec<i32>>) {
+fn SJF(processes: &mut Vec<Vec<i32>>) -> f64 {
     // [pid, arrival_time, burst time, start time, end time, running time, waiting time]
     let mut sjf = SimulationSJF::default();
     for i in 0..20 {
@@ -147,7 +154,14 @@ fn SJF(processes: &mut Vec<Vec<i32>>) {
         sjf.execute();
     }
 
-   *processes = sjf.process_finished.clone(); 
+    *processes = sjf.process_finished.clone(); 
+
+    let mut total = 0;
+    for i in 0..processes.len() {
+        total += processes[i][6];
+    }
+
+    return total as f64 / processes.len() as f64;
 }
 
 fn RR(processes: &mut Vec<Vec<i32>>, quantum: i32) {
